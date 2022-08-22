@@ -19,7 +19,7 @@ Django's [sitemap framework](https://docs.djangoproject.com/en/4.1/ref/contrib/s
 ### Install
 PyPi,
 
-        pip install django-sitemapcfg
+        pip install sitemap_cfg
 
 Or download the app code to Django.
 

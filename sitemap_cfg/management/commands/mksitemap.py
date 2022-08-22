@@ -26,8 +26,8 @@ class Command(BaseCommand):
 
     # Util
     def normalise_domain(self, domain):
-        if (domain[-1] != '/'):
-            domain = domain + '/'
+        if (domain[-1] == '/'):
+            domain = domain[:-1]
         return domain
         
     def mk_filepath(self, filedir, filename):
@@ -102,7 +102,7 @@ class Command(BaseCommand):
                 url_path = entryCfg['url_path']
                 r = Model.objects.values_list(entryCfg['field'], flat=True)
                 for e in r:
-                    url = domain + url_path + str(e)
+                    url = domain + '/' + url_path + str(e)
                     self.write_sitemap_url(f, url, priority)
                     count += 1
             else:
@@ -116,7 +116,7 @@ class Command(BaseCommand):
             for e in entryCfg['urls']:
                 url = e
                 if (not(e.startswith('http'))):
-                    url = domain + str(e)
+                    url = domain + '/' + str(e)
                 self.write_sitemap_url(f, url, priority)
                 count += 1
         return count
@@ -136,7 +136,7 @@ class Command(BaseCommand):
         except AttributeError:
             raise CommandError('The sitemap app requires a setting SITEMAP_DOMAIN.')
 
-        # currentlyly, eenforced trailing slash
+        # currentlyly, strip trailing slash
         domain = self.normalise_domain(domain)
         
 
