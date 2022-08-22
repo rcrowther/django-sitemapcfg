@@ -38,7 +38,7 @@ Need to declare where the sitemap files will go,
 
 The domain (usually aiming for cannonical),
 
-        SITEMAP_DOMAIN = "https://adayoutinmanchester.co.uk/"
+        SITEMAP_DOMAIN = "https://freefalling.com"
 
 Then declare which models to use, or URLs to add. Keys are the sitemap filename,
 
@@ -52,18 +52,20 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
             # Can have different collections of data in one sitemap
             # can use field and path data. Both keys must be present
             'sitemap_netfeatures' : [
-                {'model': 'reviews.NetFeature'},
-                {'model': 'reviews.NetFeature'},
+                {'model': 'reviews.SongReview'},
+                {'model': 'datelists.Itineries'},
+            ],
+
+            # Can use data from the model to construct URLs, usually a slug
+            'sitemap_infopages' : [
+                {'model': 'infopages.Infopage', 'field' : 'slug', 'url_path': 'info'},
             ],
 
             # can also declare one-off URLs. 
             # if preceeded by ''http' these are written as presented...
             # if written as stubs get prepended by SITEMAP_DOMAIN
-            'sitemap_infopages' : [
-                {'model': 'infopages.Infopage', 'field' : 'slug', 'url_path': 'info'},
-            ],
             'sitemap_other' : [
-                {'urls': ['no-bulbs-here', 'map/tram', 'map/elr' ]},
+                {'urls': ['credits', '', 'https://freefalling.com/' ]},
             ], 
         }
 
