@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from pathlib import Path
 from django.apps import apps
-
+#from requests.compat import urljoin
 
 
 
@@ -23,14 +23,20 @@ class Command(BaseCommand):
                 raise CommandError("Unable to locate model from path: '{}'".format(model_path))
         return Model
 
+
     # Util
+    def normalise_domain(self, domain):
+        if (domain[-1] != '/'):
+            domain = domain + '/'
+        return domain
+        
     def mk_filepath(self, filedir, filename):
         filenameExt = filename + '.xml'
         return Path(filedir) / filenameExt
 
-
     def write_xml_header(self, f):
         f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+
 
     # Index
     def open_index(self, sitemap_dir):
@@ -46,8 +52,9 @@ class Command(BaseCommand):
 
     def write_index_url(self, f, domain, mapname):
         filenameExt = mapname + '.xml'
-        url = Path(domain) / filenameExt
+        url = domain + filenameExt
         f.write('    <sitemap><loc>' + str(url) + '</loc></sitemap>\n')
+
 
     # sitemaps
     def open_sitemap(self, filepath):
@@ -95,7 +102,7 @@ class Command(BaseCommand):
                 url_path = entryCfg['url_path']
                 r = Model.objects.values_list(entryCfg['field'], flat=True)
                 for e in r:
-                    url = str(domain / url_path / str(e))
+                    url = domain + url_path + str(e)
                     self.write_sitemap_url(f, url, priority)
                     count += 1
             else:
@@ -109,7 +116,7 @@ class Command(BaseCommand):
             for e in entryCfg['urls']:
                 url = e
                 if (not(e.startswith('http'))):
-                    url = str(domain / str(e))
+                    url = domain + str(e)
                 self.write_sitemap_url(f, url, priority)
                 count += 1
         return count
@@ -118,16 +125,20 @@ class Command(BaseCommand):
     def handle(self, *args, **options):         
 
         # first check these
-        # Errors, no attept to default
+        # Errors, no attempt to default
         try:
             sitemap_dir = settings.SITEMAP_DIR
         except AttributeError:
             raise CommandError('The sitemap app requires a setting SITEMAP_DIR.')
 
         try:
-            domain = Path(settings.SITEMAP_DOMAIN)
+            domain = settings.SITEMAP_DOMAIN
         except AttributeError:
             raise CommandError('The sitemap app requires a setting SITEMAP_DOMAIN.')
+
+        # currentlyly, eenforced trailing slash
+        domain = self.normalise_domain(domain)
+        
 
         try:
             mapCfg = settings.SITEMAP
