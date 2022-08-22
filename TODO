@@ -1,0 +1,6 @@
+= TODO
+? An exclude or query
+x make sitemap index
+shouldn’t be larger than 10 MB, and shouldn’t contain URLs exceeding 50,000.
+? Add relative absolute detection for using url_path (won't presence of url_path do that?)
+x Output stats
