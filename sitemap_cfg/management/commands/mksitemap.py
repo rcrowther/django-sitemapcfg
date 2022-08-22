@@ -52,7 +52,7 @@ class Command(BaseCommand):
 
     def write_index_url(self, f, domain, mapname):
         filenameExt = mapname + '.xml'
-        url = domain + filenameExt
+        url = domain + '/' + filenameExt
         f.write('    <sitemap><loc>' + str(url) + '</loc></sitemap>\n')
 
 
