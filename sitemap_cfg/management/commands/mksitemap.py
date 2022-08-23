@@ -102,7 +102,7 @@ class Command(BaseCommand):
                 url_path = entryCfg['url_path']
                 r = Model.objects.values_list(entryCfg['field'], flat=True)
                 for e in r:
-                    url = domain + '/' + url_path + str(e)
+                    url = domain + '/' + url_path + '/' + str(e)
                     self.write_sitemap_url(f, url, priority)
                     count += 1
             else:

@@ -49,14 +49,8 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
                 {'model': 'reviews.Review'},
             ],
 
-            # Can have different collections of data in one sitemap
-            # can use field and path data. Both keys must be present
-            'sitemap_netfeatures' : [
-                {'model': 'reviews.SongReview'},
-                {'model': 'datelists.Itineries'},
-            ],
-
             # Can use data from the model to construct URLs, usually a slug
+            # 'url_path' is the intermediate parh, so allows custom URL path 
             'sitemap_infopages' : [
                 {'model': 'infopages.Infopage', 'field' : 'slug', 'url_path': 'info'},
             ],
@@ -67,6 +61,21 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
             'sitemap_other' : [
                 {'urls': ['credits', '', 'https://freefalling.com/' ]},
             ], 
+
+
+            # Can have different collections of data in one sitemap
+            'sitemap_netfeatures' : [
+                {'model': 'reviews.SongReview'},
+                {'model': 'datelists.Itineries'},
+            ],
+
+            # Can set 'priority' on any dataset
+            # Value is a string from '0.0' to '1.0' 
+            # (spec defaults to '0.5')
+            'sitemap_netfeatures' : [
+                {'urls': ['https://freefalling.com'], 'priority': '1.0'},
+                {'urls': ['https://freefalling.com/about', 'https://freefalling.com/contact'], 'priority': '0.8'},
+            ],
         }
 
 ### Generate sitemaps
