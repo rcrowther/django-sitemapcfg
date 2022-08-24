@@ -159,11 +159,12 @@ class Command(BaseCommand):
             sitemapF = self.open_sitemap(filepath)
             for entryCfg in entry_data:
                 priority = self.get_priority(entryCfg)
-                count = self.write_urls(sitemapF, entryCfg, domain, priority)
+                count = count + self.write_urls(sitemapF, entryCfg, domain, priority)
             self.close_sitemap(sitemapF)
             
             if (options['verbosity'] > 0):
                 print(f"sitemap:{filepath}, count:{count}" )
+            count = 0
             
             # update index
             self.write_index_url(indexF, domain, mapname)
