@@ -39,8 +39,8 @@ class Command(BaseCommand):
 
 
     # Index
-    def open_index(self, sitemap_dir):
-        filenameExt = Path(sitemap_dir) / 'sitemap_index.xml'
+    def open_index(self, sitemap_dir, filename):
+        filenameExt = Path(sitemap_dir) / (filename + '.xml')
         f = open(filenameExt, "w")
         self.write_xml_header(f)
         f.write('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
@@ -80,7 +80,6 @@ class Command(BaseCommand):
         if (priority):
             f.write('<priority>' + str(priority) + '</priority>')
         f.write('</url>\n')
-        
         
     def write_urls(self, f, entryCfg, domain, priority):
         model_form = 'model' in entryCfg
@@ -138,7 +137,11 @@ class Command(BaseCommand):
 
         # currentlyly, strip trailing slash
         domain = self.normalise_domain(domain)
-        
+
+        try:
+            index_name = settings.SITEMAP_INDEX_NAME
+        except AttributeError:
+            index_name = 'sitemap_index'
 
         try:
             mapCfg = settings.SITEMAP
@@ -151,7 +154,7 @@ class Command(BaseCommand):
 
         b = []
         count = 0
-        indexF = self.open_index(sitemap_dir)
+        indexF = self.open_index(sitemap_dir, index_name)
                             
         for mapname, entry_data in mapCfg.items():
             filepath = self.mk_filepath(sitemap_dir, mapname)

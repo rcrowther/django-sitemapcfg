@@ -40,6 +40,10 @@ The domain (usually aiming for cannonical),
 
         SITEMAP_DOMAIN = "https://freefalling.com"
 
+Sitemap index name defaults to 'sitemap_index', but can be renamed,
+
+        SITEMAP_INDEX_NAME = 'sitemap_main'
+
 Then declare which models to use, or URLs to add. Keys are the sitemap filename,
 
         SITEMAP = {
@@ -77,6 +81,9 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
                 {'urls': ['https://freefalling.com/about', 'https://freefalling.com/contact'], 'priority': '0.8'},
             ],
         }
+
+Note that, at the time of writing, Google say they don't use 'priority'.
+
 
 ### Generate sitemaps
 
