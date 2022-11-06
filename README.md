@@ -5,8 +5,8 @@ Django's [sitemap framework](https://docs.djangoproject.com/en/4.1/ref/contrib/s
 ## Why you would not want to use this app
 - Can only output URLs from model URL data, not views
 - Has no exclude/filter configuration, outputs everything
-- No checks for file-size, subfolder renaming etc.
-- Creates an index always, despite one sitemap only
+- No checks for sitemap file-size, subfolder renaming etc.
+- Creates a sitemap index always, despite one sitemap only
 - Ignores most of the sitemap spec
 - Can only handle one site
 
@@ -36,7 +36,7 @@ Need to declare where the sitemap files will go,
 
         SITEMAP_DIR = PROJECT_DIR / "static"
 
-The domain (usually aiming for cannonical),
+The domain (usually set for cannonical),
 
         SITEMAP_DOMAIN = "https://freefalling.com"
 
@@ -73,16 +73,15 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
                 {'model': 'datelists.Itineries'},
             ],
 
-            # Can set 'priority' on any dataset
-            # Value is a string from '0.0' to '1.0' 
-            # (spec defaults to '0.5')
+            # Can set 'lastmod_field' on model datasets
+            # Value is the fieldname to get the modification data from
+            # The field is expected to be a Django DateField
             'sitemap_netfeatures' : [
-                {'urls': ['https://freefalling.com'], 'priority': '1.0'},
-                {'urls': ['https://freefalling.com/about', 'https://freefalling.com/contact'], 'priority': '0.8'},
+                {'model': 'infopages.Infopage', 'field' : 'slug', 'lastmod_field': 'modified'},
             ],
         }
 
-Note that, at the time of writing, Google say they don't use 'priority'.
+Note that, at the time of writing, Google say they recognise only 'lastmod' attritutes in sitemaps.
 
 
 ### Generate sitemaps

@@ -3,7 +3,7 @@ from django.conf import settings
 from pathlib import Path
 from django.apps import apps
 #from requests.compat import urljoin
-
+from datetime import date
 
 
 class Command(BaseCommand):
@@ -66,22 +66,25 @@ class Command(BaseCommand):
     def close_sitemap(self, f):
         f.write('</urlset>')
         f.close()
-        
-    def get_priority(self, entryCfg):
-        priority = ''
-        if ('priority' in entryCfg):
-            priority = entryCfg['priority']
-            if (float(priority) > 1):
-                raise CommandError(f'Entry has priorty greater than 1: {entry_data}')
-        return priority
 
-    def write_sitemap_url(self, f, url, priority):
+    def write_sitemap_url(self, f, url, lastmod):
         f.write('    <url><loc>' + str(url) + '</loc>')
-        if (priority):
-            f.write('<priority>' + str(priority) + '</priority>')
+        if (lastmod):
+            f.write('<lastmod>' + str(lastmod) + '</lastmod>')
         f.write('</url>\n')
         
-    def write_urls(self, f, entryCfg, domain, priority):
+    def get_lastmod_txt(self, model_entry, lastmod_field):
+        '''
+        return empty string or if available ISO time as string 
+        '''
+        #? assumes datetime object
+        lastmod_txt = ''
+        if (lastmod_field):
+            lastmod = getattr(model_entry, lastmod_field)
+            lastmod_txt = lastmod.isoformat()
+        return lastmod_txt
+                                
+    def write_urls(self, f, entryCfg, domain):
         model_form = 'model' in entryCfg
         literal_form = 'urls' in entryCfg
         if (not(model_form) and not(literal_form)):
@@ -92,31 +95,42 @@ class Command(BaseCommand):
         if (model_form):
             # Model based config
             Model = self.get_model(entryCfg['model'])
-            
+            lastmod_field = None
+      
+            if ('lastmod_field' in entryCfg):
+                lastmod_field = entryCfg['lastmod_field']
+                if (not getattr(Model, lastmod_field, None)):
+                    raise CommandError(f"Config Entry for 'lastmod_field' names ungettable attribute: {entryCfg}")
+                #if (options['verbosity'] > 1):
+                #    print(f"Will write lastmod attribute model:{Model.__class__.__name__}, count:{lastmod_field}" )
+
             #! check has ''field'
             if ('field' in entryCfg):
                 # Ok, field based URL construction
                 if (not ('url_path' in entryCfg)):
-                    raise CommandError(f'Entry config has key for model but no key for url_path: {entryCfg}')
+                    raise CommandError(f"Config entry has key 'field' but no key for url_path: {entryCfg}")
                 url_path = entryCfg['url_path']
-                r = Model.objects.values_list(entryCfg['field'], flat=True)
+                fieldname = entryCfg['field']
+                r = Model.objects.all()
                 for e in r:
-                    url = domain + '/' + url_path + '/' + str(e)
-                    self.write_sitemap_url(f, url, priority)
+                    url = domain + '/' + url_path + '/' + str(getattr(e, fieldname))
+                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field)
+                    self.write_sitemap_url(f, url, lastmod_txt)
                     count += 1
             else:
                 # try construction from get_absolute_url()
                 r = Model.objects.all()
                 for e in r:
                     url = str(domain) + e.get_absolute_url()
-                    self.write_sitemap_url(f, url, priority)
+                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field)
+                    self.write_sitemap_url(f, url, lastmod_txt)
                     count += 1
         if (literal_form):
             for e in entryCfg['urls']:
                 url = e
                 if (not(e.startswith('http'))):
                     url = domain + '/' + str(e)
-                self.write_sitemap_url(f, url, priority)
+                self.write_sitemap_url(f, url, None)
                 count += 1
         return count
         
@@ -135,7 +149,7 @@ class Command(BaseCommand):
         except AttributeError:
             raise CommandError('The sitemap app requires a setting SITEMAP_DOMAIN.')
 
-        # currentlyly, strip trailing slash
+        # currently, strip trailing slash
         domain = self.normalise_domain(domain)
 
         try:
@@ -161,8 +175,7 @@ class Command(BaseCommand):
             
             sitemapF = self.open_sitemap(filepath)
             for entryCfg in entry_data:
-                priority = self.get_priority(entryCfg)
-                count = count + self.write_urls(sitemapF, entryCfg, domain, priority)
+                count = count + self.write_urls(sitemapF, entryCfg, domain)
             self.close_sitemap(sitemapF)
             
             if (options['verbosity'] > 0):
