@@ -4,7 +4,7 @@ from pathlib import Path
 from django.apps import apps
 #from requests.compat import urljoin
 from datetime import date
-
+import datetime
 
 class Command(BaseCommand):
     help = 'Create/update sitemaps'
@@ -73,15 +73,33 @@ class Command(BaseCommand):
             f.write('<lastmod>' + str(lastmod) + '</lastmod>')
         f.write('</url>\n')
         
-    def get_lastmod_txt(self, model_entry, lastmod_field):
+    def lastmod_date_is_valid(self, txt, entryCfg):
+        try:
+            year, month, day = txt.split('-')
+            try:
+                date = datetime.date(int(year), int(month), int(day))
+            except ValueError:
+                raise CommandError(f"Config Entry for 'lastmod_field' names invalid date (YYYY-MM-DD): {entryCfg}")
+            if (datetime.date.today() < date):
+                raise CommandError(f"Config Entry for 'lastmod_field' declares date in future: {entryCfg}")
+        except ValueError:
+            raise CommandError(f"Config Entry for 'lastmod_field' must be hyphened (YYYY-MM-DD): {entryCfg}")
+
+            
+        
+    def get_lastmod_txt(self, model_entry, lastmod_field, lastmodIsDate):
         '''
         return empty string or if available ISO time as string 
         '''
-        #? assumes datetime object
+        #? assumes DateField. What about DateTime fields?
         lastmod_txt = ''
+
         if (lastmod_field):
-            lastmod = getattr(model_entry, lastmod_field)
-            lastmod_txt = lastmod.isoformat()
+            if (lastmodIsDate):
+                lastmod_txt = lastmod_field
+            else:
+                lastmod = getattr(model_entry, lastmod_field)
+                lastmod_txt = lastmod.isoformat()
         return lastmod_txt
                                 
     def write_urls(self, f, entryCfg, domain):
@@ -92,18 +110,30 @@ class Command(BaseCommand):
 
         b = []
         count = 0
+        
+        # look at lastmod
+        lastmod_field = None 
+        lastmodIsDate = False
+        if ('lastmod_field' in entryCfg):
+            lastmod_field = entryCfg['lastmod_field']
+            lastmodIsDate = ('-' in lastmod_field) or ('/' in lastmod_field)
+            if (lastmodIsDate):
+                # it's an attempted date
+                # throw if not valid
+                self.lastmod_date_is_valid(lastmod_field, entryCfg)
+
+            #if (options['verbosity'] > 1):
+            #    print(f"Will write lastmod attribute model:{Model.__class__.__name__}, count:{lastmod_field}" )
+    
         if (model_form):
             # Model based config
             Model = self.get_model(entryCfg['model'])
-            lastmod_field = None
-      
-            if ('lastmod_field' in entryCfg):
-                lastmod_field = entryCfg['lastmod_field']
+            
+            if (lastmod_field and (not lastmodIsDate)):
+                # it's an attempted field
                 if (not getattr(Model, lastmod_field, None)):
-                    raise CommandError(f"Config Entry for 'lastmod_field' names ungettable attribute: {entryCfg}")
-                #if (options['verbosity'] > 1):
-                #    print(f"Will write lastmod attribute model:{Model.__class__.__name__}, count:{lastmod_field}" )
-
+                    raise CommandError(f"Config Entry for 'lastmod_field' names ungettable attribute: {entryCfg}")            
+            
             #! check has ''field'
             if ('field' in entryCfg):
                 # Ok, field based URL construction
@@ -114,7 +144,7 @@ class Command(BaseCommand):
                 r = Model.objects.all()
                 for e in r:
                     url = domain + '/' + url_path + '/' + str(getattr(e, fieldname))
-                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field)
+                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field, lastmodIsDate)
                     self.write_sitemap_url(f, url, lastmod_txt)
                     count += 1
             else:
@@ -122,15 +152,17 @@ class Command(BaseCommand):
                 r = Model.objects.all()
                 for e in r:
                     url = str(domain) + e.get_absolute_url()
-                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field)
+                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field, lastmodIsDate)
                     self.write_sitemap_url(f, url, lastmod_txt)
                     count += 1
         if (literal_form):
+            if (lastmod_field and not lastmodIsDate):
+                    raise CommandError(f"Config entry for literals has key not recognisable as literal date. Form is (YYYY-MM-DD): {entryCfg}")
             for e in entryCfg['urls']:
                 url = e
                 if (not(e.startswith('http'))):
                     url = domain + '/' + str(e)
-                self.write_sitemap_url(f, url, None)
+                self.write_sitemap_url(f, url, lastmod_field)
                 count += 1
         return count
         

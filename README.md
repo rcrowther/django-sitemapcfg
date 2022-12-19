@@ -54,7 +54,7 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
             ],
 
             # Can use data from the model to construct URLs, usually a slug
-            # 'url_path' is the intermediate parh, so allows custom URL path 
+            # 'url_path' is the intermediate path, so allows custom URL path 
             'sitemap_infopages' : [
                 {'model': 'infopages.Infopage', 'field' : 'slug', 'url_path': 'info'},
             ],
@@ -68,20 +68,44 @@ Then declare which models to use, or URLs to add. Keys are the sitemap filename,
 
 
             # Can have different collections of data in one sitemap
-            'sitemap_netfeatures' : [
+            'sitemap_specialist_reviews' : [
                 {'model': 'reviews.SongReview'},
-                {'model': 'datelists.Itineries'},
-            ],
-
-            # Can set 'lastmod_field' on model datasets
-            # Value is the fieldname to get the modification data from
-            # The field is expected to be a Django DateField
-            'sitemap_netfeatures' : [
-                {'model': 'infopages.Infopage', 'field' : 'slug', 'lastmod_field': 'modified'},
+                {'model': 'datelists.ProductReviews'},
             ],
         }
 
-Note that, at the time of writing, Google say they recognise only 'lastmod' attritutes in sitemaps.
+
+#### The lastmod attribute
+Most sitemap spec attributes are ignored. Google, and presumably other engines, say they ignore them ('priority' etc.). However, Google recognises, and encourages use of, the 'lastmod' attribute. Add 'lastmod' attributes to models like this,
+
+        SITEMAP = {
+            # Can set 'lastmod_field' on model datasets
+            # Value is the fieldname to get the modification data from
+            # The field is expected to be a Django DateField
+            'sitemap_infopages' : [
+                {'model': 'infopages.Infopage', 'field' : 'slug', , 'url_path': 'info', 'lastmod_field': 'modified'},
+            ],
+        }
+
+This assumes the declared model field is a Django 'models.DateField'.
+
+There's another option available. This is because it is possible to change a delivered webpage without changing the model. Instead, templates are changed. As a dramatic example, perhaps templates have been adapted with 'structured data' added, to deliver what Google calls 'search snippets'. Of course,, as time goes by, you would like Google (at least, but maybe Bing, Yandex etc.) to recrawl these pages to deliver the new data, and so the enhanced search listing. So a literal date can be declared, in the form YYYY-MM-DD,
+
+        SITEMAP = {
+            # Can set a literal value on 'lastmod_field'
+            'sitemap_infopages' : [
+                {'model': 'infopages.Infopage', 'field' : 'slug', 'lastmod_field': '2021-12-02'},
+            ],
+
+            # can also declare a literal value of 'lastmod_field' one-off URLs. 
+            'sitemap_other' : [
+                {'urls': ['credits', '', 'https://freefalling.com/'], 'lastmod_field': '2021-12-02'},
+            ], 
+        }
+
+A thought: I considered a 'today' option, but that would update on every sitemap generation, so is wildly imprecise. And unhelpful to search engines. Also, mass updating of model 'modified' dates is not good for site maintenence, the page is updating, not the model data. A literal date will not be automatic, will need the Django Setting file changing and possibly reverting. Whatever, it leaves model data unaltered, as it should be. Once a search engine has crawled, the setting can be reverted to a model 'modified' field, and pages with no model will use the coded literal date, which is a fair representation.
+ 
+
 
 
 ### Generate sitemaps
