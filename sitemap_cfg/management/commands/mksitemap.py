@@ -73,21 +73,21 @@ class Command(BaseCommand):
             f.write('<lastmod>' + str(lastmod) + '</lastmod>')
         f.write('</url>\n')
         
-    def lastmod_date_is_valid(self, txt, entryCfg):
+    def lastmod_date_literal_is_valid(self, txt, entryCfg):
         try:
             year, month, day = txt.split('-')
             try:
                 date = datetime.date(int(year), int(month), int(day))
             except ValueError:
-                raise CommandError(f"Config Entry for 'lastmod_field' names invalid date (YYYY-MM-DD): {entryCfg}")
+                raise CommandError(f"Config Entry for 'lastmod_field' names invalid literal date (YYYY-MM-DD): {entryCfg}")
             if (datetime.date.today() < date):
-                raise CommandError(f"Config Entry for 'lastmod_field' declares date in future: {entryCfg}")
+                raise CommandError(f"Config Entry for 'lastmod_field' declares literal date in future: {entryCfg}")
         except ValueError:
-            raise CommandError(f"Config Entry for 'lastmod_field' must be hyphened (YYYY-MM-DD): {entryCfg}")
+            raise CommandError(f"Config Entry for 'lastmod_field' is literal date, which must be hyphened (YYYY-MM-DD): {entryCfg}")
 
             
         
-    def get_lastmod_txt(self, model_entry, lastmod_field, lastmodIsDate):
+    def get_lastmod_txt(self, model_entry, lastmod_field, lastmodIsDateLiteral):
         '''
         return empty string or if available ISO time as string 
         '''
@@ -95,7 +95,7 @@ class Command(BaseCommand):
         lastmod_txt = ''
 
         if (lastmod_field):
-            if (lastmodIsDate):
+            if (lastmodIsDateLiteral):
                 lastmod_txt = lastmod_field
             else:
                 lastmod = getattr(model_entry, lastmod_field)
@@ -113,14 +113,17 @@ class Command(BaseCommand):
         
         # look at lastmod
         lastmod_field = None 
-        lastmodIsDate = False
+        lastmodIsDateLiteral = False
         if ('lastmod_field' in entryCfg):
             lastmod_field = entryCfg['lastmod_field']
-            lastmodIsDate = ('-' in lastmod_field) or ('/' in lastmod_field)
-            if (lastmodIsDate):
-                # it's an attempted date
+            
+            # Look for slashes, though not allowed. User will be 
+            # informed
+            lastmodIsDateLiteral = ('-' in lastmod_field) or ('/' in lastmod_field)
+            if (lastmodIsDateLiteral):
+                # it's an attempted date literal, not field reference
                 # throw if not valid
-                self.lastmod_date_is_valid(lastmod_field, entryCfg)
+                self.lastmod_date_literal_is_valid(lastmod_field, entryCfg)
 
             #if (options['verbosity'] > 1):
             #    print(f"Will write lastmod attribute model:{Model.__class__.__name__}, count:{lastmod_field}" )
@@ -129,8 +132,9 @@ class Command(BaseCommand):
             # Model based config
             Model = self.get_model(entryCfg['model'])
             
-            if (lastmod_field and (not lastmodIsDate)):
-                # it's an attempted field
+            if (lastmod_field and (not lastmodIsDateLiteral)):
+                # it's an attempted field reference
+                # Test we can get the field
                 if (not getattr(Model, lastmod_field, None)):
                     raise CommandError(f"Config Entry for 'lastmod_field' names ungettable attribute: {entryCfg}")            
             
@@ -144,7 +148,7 @@ class Command(BaseCommand):
                 r = Model.objects.all()
                 for e in r:
                     url = domain + '/' + url_path + '/' + str(getattr(e, fieldname))
-                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field, lastmodIsDate)
+                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field, lastmodIsDateLiteral)
                     self.write_sitemap_url(f, url, lastmod_txt)
                     count += 1
             else:
@@ -152,11 +156,11 @@ class Command(BaseCommand):
                 r = Model.objects.all()
                 for e in r:
                     url = str(domain) + e.get_absolute_url()
-                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field, lastmodIsDate)
+                    lastmod_txt = self.get_lastmod_txt(e, lastmod_field, lastmodIsDateLiteral)
                     self.write_sitemap_url(f, url, lastmod_txt)
                     count += 1
         if (literal_form):
-            if (lastmod_field and not lastmodIsDate):
+            if (lastmod_field and not lastmodIsDateLiteral):
                     raise CommandError(f"Config entry for literals has key not recognisable as literal date. Form is (YYYY-MM-DD): {entryCfg}")
             for e in entryCfg['urls']:
                 url = e
