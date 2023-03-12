@@ -87,7 +87,7 @@ Most sitemap spec attributes are ignored. Google, and presumably other engines, 
             ],
         }
 
-This assumes the declared model field is a Django 'models.DateField'.
+This assumes the declared model field is a Django 'models.DateTkme' or 'models.DateField'.
 
 There's another option available. This is because it is possible to change a delivered webpage without changing the model. Instead, templates are changed. As a dramatic example, perhaps templates have been adapted with 'structured data' added, to deliver what Google calls 'search snippets'. Of course,, as time goes by, you would like Google (at least, but maybe Bing, Yandex etc.) to recrawl these pages to deliver the new data, and so the enhanced search listing. So a literal date can be declared, in the form YYYY-MM-DD,
 
@@ -103,7 +103,7 @@ There's another option available. This is because it is possible to change a del
             ], 
         }
 
-A thought: I considered a 'today' option, but that would update on every sitemap generation, so is wildly imprecise. And unhelpful to search engines. Also, mass updating of model 'modified' dates is not good for site maintenence, the page is updating, not the model data. A literal date will not be automatic, will need the Django Setting file changing and possibly reverting. Whatever, it leaves model data unaltered, as it should be. Once a search engine has crawled, the setting can be reverted to a model 'modified' field, and pages with no model will use the coded literal date, which is a fair representation.
+A thought: I considered a 'today' option, but that would update on every sitemap generation, so is wildly imprecise and unhelpful to search engines. Also, mass updating of model 'modified' dates is not good for site maintenence, the page is updating, not the model data. A literal date will not be automatic, will need the Django Setting file to be changed and possibly later reverted. However, it leaves model data unaltered, as it should be. Once a search engine has crawled, the setting can be reverted to a reference to a model field. Also, pages with no model can use a literal date, which is a fair representation.
  
 
 
